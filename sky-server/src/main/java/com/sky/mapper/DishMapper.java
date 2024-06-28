@@ -36,4 +36,7 @@ public interface DishMapper {
     Dish getDishById(Long id);
     @Delete("delete from sky_take_out.dish where id = #{id}")
     void deleteById(Long id);
+
+    @AutoFill(value = OperationType.UPDATE)
+    void updateById(Dish dish);
 }
