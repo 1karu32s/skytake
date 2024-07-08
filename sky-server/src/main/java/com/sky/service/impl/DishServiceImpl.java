@@ -8,11 +8,9 @@ import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.DishFlavor;
+import com.sky.entity.Setmeal;
 import com.sky.exception.DeletionNotAllowedException;
-import com.sky.mapper.DishFlavorMapper;
-import com.sky.mapper.DishMapper;
-import com.sky.mapper.SetmealDishMapper;
-import com.sky.mapper.SetmealMapper;
+import com.sky.mapper.*;
 import com.sky.result.PageResult;
 import com.sky.service.DishService;
 import com.sky.vo.DishVO;
@@ -36,6 +34,8 @@ public class DishServiceImpl implements DishService {
     DishFlavorMapper dishFlavorMapper;
     @Autowired
     SetmealDishMapper setmealDishMapper;
+    @Autowired
+    SetmealMapper setmealMapper;
 
     /**
      * 保存口味和菜品
@@ -105,7 +105,15 @@ public class DishServiceImpl implements DishService {
     @Override
     @Transactional
     public void upadteWithFlavor(DishDTO dishDTO) {
-        Dish dish = new Dish();
+        Dish dish = Dish.builder()
+                .id(dishDTO.getId())
+                .name(dishDTO.getName())
+                .categoryId(dishDTO.getCategoryId())
+                .price(dishDTO.getPrice())
+                .image(dishDTO.getImage())
+                .description(dishDTO.getDescription())
+                .status(dishDTO.getStatus())
+                .build();
         dishMapper.updateById(dish);
         dishFlavorMapper.deleteByDishId(dish.getId());
         List<DishFlavor> flavors = dishDTO.getFlavors();
@@ -157,5 +165,37 @@ public class DishServiceImpl implements DishService {
         }
 
         return dishVOList;
+    }
+
+
+    @Override
+    @Transactional
+    public void startOrStop(Integer status, Long id) {
+        if (status == StatusConstant.DISABLE){
+//            需要判断是否有关联的套餐,根据菜品id查询套餐
+            Dish dish = Dish.builder()
+                    .status(status)
+                    .id(id)
+                    .build();
+            dishMapper.updateById(dish);
+            // select setmealId from setmeal_dish where dish_id in (?,?,?)
+            List<Long> setmealIds = setmealDishMapper.getSetmealIdByDishId(id);
+            if(setmealIds != null &&setmealIds.size()>0){
+                for (Long setmealId :setmealIds) {
+                    Setmeal setmeal = Setmeal.builder()
+                            .id(setmealId)
+                            .status(StatusConstant.DISABLE)
+                            .build();
+                    setmealMapper.update(setmeal);
+                }
+            }
+
+        }else {
+            Dish dish = Dish.builder()
+                    .status(status)
+                    .id(id)
+                    .build();
+            dishMapper.updateById(dish);
+        }
     }
 }
