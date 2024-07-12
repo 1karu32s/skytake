@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,6 +31,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     @Autowired
     SetmealMapper setmealMapper;
     @Override
+    @Transactional
     public void addShoppingCart(ShoppingCartDTO shoppingCartDTO) {
 //        首先判断购物商品是否存在，所以要列出当前的userid下的所有商品，做成一个列表来查询
         ShoppingCart shoppingCart = new ShoppingCart();
@@ -67,6 +69,35 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             shoppingCart.setCreateTime(LocalDateTime.now());
             shoppingCartMapper.insert(shoppingCart);
         }
+    }
+
+    @Override
+    @Transactional
+    public void subShoppingCart(ShoppingCartDTO shoppingCartDTO) {
+        Long userId = BaseContext.getCurrentId();
+        ShoppingCart shoppingCart = ShoppingCart.builder()
+                .userId(userId)
+                .build();
+
+        List<ShoppingCart> list = shoppingCartMapper.list(shoppingCart);
+        if(list != null && list.size()>0){
+            ShoppingCart cart = list.get(0);
+            if(cart.getNumber() > 1) {
+                cart.setNumber(cart.getNumber() - 1);
+            }else {
+                //本次操作减去购物车的是菜品
+                Long dishId = shoppingCartDTO.getDishId();
+                if(dishId != null) {
+                    shoppingCartMapper.deleteByDishId(userId, dishId);
+                }else {
+                    //本次操作减去购物车的是套餐
+                    Long setmealId = shoppingCartDTO.getSetmealId();
+                    shoppingCartMapper.deleteBySetmealId(userId, setmealId);
+                }
+            }
+            shoppingCartMapper.update(cart);
+        }
+
     }
 
     @Override

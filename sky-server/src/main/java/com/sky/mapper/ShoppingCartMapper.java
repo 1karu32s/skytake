@@ -22,4 +22,13 @@ public interface ShoppingCartMapper {
 
     @Delete("delete from sky_take_out.shopping_cart where user_id = #{uerId}")
     void deleteByUserId(Long userId);
+
+    @Delete("delete from sky_take_out.shopping_cart where dish_id = #{dishId}")
+    void deleteByDishId(Long userId, Long dishId);
+
+    @Delete("delete from sky_take_out.shopping_cart where setmeal_id = #{setmealId}")
+    void deleteBySetmealId(Long userId, Long setmealId);
+
+
+
 }
